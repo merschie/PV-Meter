@@ -172,7 +172,10 @@ void loop() {
 
   PVstrip.show();
 
-
+  //clear strip
+  for (int i = 0; i < 19; i++){
+    Batstrip.setPixelColor(i, Batstrip.Color(0, 0, 0));
+  }
 
   //Show battery
   for (int i = 0; i < batLedNum; i++){
