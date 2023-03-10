@@ -69,6 +69,11 @@ void loop() {
   String payload = http.getString();
   //Serial.println(httpCode);
   //Serial.println(payload);
+  if (httpCode != 200){
+    Serial.println("Error on HTTP request");
+    return;
+  }
+
   http.end();
   //convert payload to JSON
   StaticJsonDocument<1024> doc;
@@ -81,11 +86,10 @@ void loop() {
   int cons = doc["Data"][47];
   int batTotal = doc["Data"][103];
   int pvTotal = pv1 + pv2;
-  pvTotal = 850;
 
 
-  // Serial.println(pv1);
-  // Serial.println(pv2);
+  Serial.println(pv1);
+  Serial.println(pv2);
   Serial.println(cons);
 
 
@@ -117,19 +121,6 @@ void loop() {
   batLedNum = (batTotal-10) / 9;
   batLedBrightness = (batTotal-10) % 9 * 255/9;
 
-  Serial.print("PV LEDs: ");
-  Serial.println(numLed);
-  Serial.print("Cons LEDS: ");
-  Serial.println(numConsumptionLED);
-  Serial.println("-----");
-  Serial.print("LastLedBrightness: ");
-  Serial.println(LastLedBrightness);
- 
-  
-  
-  
-  
-  //clear strip
   for (int i = 0; i < 19; i++){
     PVstrip.setPixelColor(i, PVstrip.Color(0, 0, 0));
   }
@@ -165,9 +156,6 @@ void loop() {
     PVstrip.setPixelColor(numLed, PVstrip.Color(0,LastLedBrightness, 0));
     PVstrip.setPixelColor(numConsumptionLED, PVstrip.getPixelColor(numConsumptionLED) + PVstrip.Color(0,0,LastConsumptionLedBrightness));
   }
-
-
-
 
 
   PVstrip.show();
