@@ -4,14 +4,15 @@
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
-#define PINPV D4
-#define PINBAT D3
+#define PINPV D3
+#define PINBAT D4
+#define LEDS 19
 
 const char ssid[] = WIFI_SSID;
 const char password[] = WIFI_PASSWD;
 WiFiClient wifiClient;
-Adafruit_NeoPixel PVstrip = Adafruit_NeoPixel(19, PINPV, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel Batstrip = Adafruit_NeoPixel(19, PINBAT, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel PVstrip = Adafruit_NeoPixel(LEDS, PINPV, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel Batstrip = Adafruit_NeoPixel(LEDS, PINBAT, NEO_GRB + NEO_KHZ800);
 int numLed = 0;
 int LastLedBrightness = 0;
 int numConsumptionLED = 0;
@@ -37,12 +38,17 @@ void setup() {
 
   PVstrip.begin();
   PVstrip.setBrightness(50);
+  Batstrip.begin();
+  Batstrip.setBrightness(50);
+
 
   //clear strip
   for (int i = 0; i < 19; i++){
     PVstrip.setPixelColor(i, PVstrip.Color(0, 0, 0));
+    Batstrip.setPixelColor(i, PVstrip.Color(0, 0, 0));
   }
   PVstrip.show();
+  Batstrip.show();
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println("Hello World!");
@@ -63,7 +69,7 @@ void loop() {
 
   //POST request
   HTTPClient http;
-  http.begin(wifiClient,"http://192.168.178.59/");
+  http.begin(wifiClient,"http://espressif/");
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
   int httpCode = http.POST("optType=ReadRealTimeData&pwd=SRCMLTKJL9");
   String payload = http.getString();
@@ -76,9 +82,15 @@ void loop() {
 
   http.end();
   //convert payload to JSON
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<2048> doc;
   deserializeJson(doc, payload);
   
+  //print each value
+/*   for (int i = 0; i < doc["Data"].size(); i++){
+    Serial.print("\n" + String(i) + ": ");
+    int x = doc["Data"][i];
+    Serial.print(x);
+  } */
 
 
   int pv1 = doc["Data"][14];
@@ -88,9 +100,9 @@ void loop() {
   int pvTotal = pv1 + pv2;
 
 
-  Serial.println(pv1);
-  Serial.println(pv2);
+  Serial.println(pvTotal);
   Serial.println(cons);
+  Serial.println(batTotal);
 
 
 
@@ -102,9 +114,11 @@ void loop() {
     LastLedBrightness = (pvTotal % 200)*255/200;
   }
   else{
-    numLed = 5+ (pvTotal/1000);
+    numLed = 4+ (pvTotal/1000);
     LastLedBrightness = (pvTotal % 1000)*255/1000;
   }
+  
+
 
 
   if (cons < 1001){
@@ -113,12 +127,15 @@ void loop() {
     LastConsumptionLedBrightness = (cons % 200)*255/200;
   }
   else{
-    numConsumptionLED = 5 + (cons/1000);
-    LastConsumptionLedBrightness = 5 +  (cons % 1000)*255/1000;
+    numConsumptionLED = 4 + (cons/1000);
+    LastConsumptionLedBrightness = 4 +  (cons % 1000)*255/1000;
   }
 
+  Serial.println(numLed);
+  Serial.println(numConsumptionLED);
 
-  batLedNum = (batTotal-10) / 9;
+  
+  batLedNum = ((batTotal-10) /90.0)*LEDS;
   batLedBrightness = (batTotal-10) % 9 * 255/9;
 
   for (int i = 0; i < 19; i++){
@@ -172,7 +189,7 @@ void loop() {
   Batstrip.setPixelColor(batLedNum, Batstrip.Color(0, batLedBrightness, 0));
   Batstrip.show();
 
-
+  Serial.println("---------------------");
   //wait 10 seconds
   delay(10000);
 
